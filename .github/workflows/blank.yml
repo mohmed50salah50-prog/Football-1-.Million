@@ -1,0 +1,44 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          unzip -q football-millionaire.zip
+          cp -r football-millionaire/. .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm install
+
+      - name: Copy Arabic font
+        run: |
+          mkdir -p www/fonts
+          cp node_modules/@fontsource/cairo/files/cairo-arabic-700-normal.woff2 www/fonts/
+          cp node_modules/@fontsource/cairo/files/cairo-arabic-900-normal.woff2 www/fonts/
+
+      - run: node scripts/build-questions.js
+
+      - name: Create splash image
+        run: |
+          pip install pillow
+          python3 - <<'PY'
+          from PIL import Image
+          icon = Image.open("assets/icon.png").convert("RGB").resize((1100, 1100))
+          bg = Image.new("RGB", (2732, 2732), (3, 8, 24))
